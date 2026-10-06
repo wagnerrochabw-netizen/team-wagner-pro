@@ -1,0 +1,8 @@
+{
+  "name": "Remix Team Wagner - Treino \u0026 Consistência",
+  "description": "Aplicativo de alta performance física para registro ágil de treinos, rastreamento de consistência e métricas do Team Wagner.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

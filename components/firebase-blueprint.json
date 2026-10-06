@@ -1,0 +1,163 @@
+{
+  "entities": {
+    "user": {
+      "title": "UserProfile",
+      "description": "User profile with personal goals, streak, and fitness configuration",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "name": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 200 },
+        "avatarUrl": { "type": "string", "maxLength": 2000 },
+        "streakDays": { "type": "number" },
+        "recordStreakDays": { "type": "number" },
+        "weeklyGoalCompleted": { "type": "number" },
+        "weeklyGoalTarget": { "type": "number" },
+        "totalMinutes": { "type": "number" },
+        "consistencyPercentage": { "type": "number" },
+        "heightCm": { "type": "number" },
+        "weightKg": { "type": "number" },
+        "goalCategory": { "type": "string", "maxLength": 100 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "name"]
+    },
+    "workout": {
+      "title": "WorkoutLog",
+      "description": "Registered workout session with duration, sensation, and optional photo",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 30 },
+        "displayDate": { "type": "string", "maxLength": 30 },
+        "activityType": { "type": "string", "maxLength": 100 },
+        "durationMinutes": { "type": "number" },
+        "sensation": { "type": "string", "enum": ["leve", "bom", "pesado", "muito_pesado"] },
+        "notes": { "type": "string", "maxLength": 2000 },
+        "photoUrl": { "type": "string", "maxLength": 5000 },
+        "photoSource": { "type": "string", "enum": ["direct_url", "upload", "preset"] },
+        "timestamp": { "type": "number" }
+      },
+      "required": ["id", "userId", "activityType", "durationMinutes", "sensation"]
+    },
+    "water_log": {
+      "title": "WaterTrackingLog",
+      "description": "Daily water consumption and hydration record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 30 },
+        "liters": { "type": "number" },
+        "targetLiters": { "type": "number" },
+        "timestamp": { "type": "number" }
+      },
+      "required": ["id", "userId", "liters"]
+    },
+    "sleep_log": {
+      "title": "SleepTrackingLog",
+      "description": "Daily sleep hours and sleep quality metrics",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 30 },
+        "hours": { "type": "number" },
+        "quality": { "type": "string", "maxLength": 50 },
+        "timestamp": { "type": "number" }
+      },
+      "required": ["id", "userId", "hours"]
+    },
+    "checklist_item": {
+      "title": "ChecklistItem",
+      "description": "Daily habit or task checklist item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "completed": { "type": "boolean" },
+        "category": { "type": "string", "maxLength": 50 },
+        "date": { "type": "string", "maxLength": 30 }
+      },
+      "required": ["id", "userId", "title", "completed"]
+    },
+    "event": {
+      "title": "CalendarEvent",
+      "description": "Scheduled workout session or coaching event",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "date": { "type": "string", "maxLength": 30 },
+        "time": { "type": "string", "maxLength": 10 },
+        "type": { "type": "string", "maxLength": 50 },
+        "completed": { "type": "boolean" }
+      },
+      "required": ["id", "userId", "title", "date"]
+    },
+    "note": {
+      "title": "UserNote",
+      "description": "Personal athlete training notes and observations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "content": { "type": "string", "maxLength": 5000 },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "userId", "content"]
+    },
+    "challenge": {
+      "title": "CommunityChallenge",
+      "description": "Group community fitness challenge",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "participantsCount": { "type": "number" },
+        "daysRemaining": { "type": "number" },
+        "category": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 500 }
+      },
+      "required": ["id", "title"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "user",
+      "description": "User profile with streak and physical stats"
+    },
+    "/users/{userId}/workouts/{workoutId}": {
+      "schema": "workout",
+      "description": "Individual workout log with duration, photo, and feedback"
+    },
+    "/users/{userId}/water_logs/{logId}": {
+      "schema": "water_log",
+      "description": "Water hydration daily entries"
+    },
+    "/users/{userId}/sleep_logs/{logId}": {
+      "schema": "sleep_log",
+      "description": "Sleep logs and sleep recovery metrics"
+    },
+    "/users/{userId}/checklists/{checklistId}": {
+      "schema": "checklist_item",
+      "description": "Daily habit checklists and accountability tasks"
+    },
+    "/users/{userId}/events/{eventId}": {
+      "schema": "event",
+      "description": "Scheduled workouts and training calendar events"
+    },
+    "/users/{userId}/notes/{noteId}": {
+      "schema": "note",
+      "description": "Athlete journal entries and coaching notes"
+    },
+    "/challenges/{challengeId}": {
+      "schema": "challenge",
+      "description": "Public community challenges and leaderboards"
+    }
+  }
+}
