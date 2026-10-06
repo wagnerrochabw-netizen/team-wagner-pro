@@ -1,11 +1,12 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
+import { useState, useEffect } from 'react';
+import { getAllWaterLogs, getTodayDateString } from './water-service';
 
 const STORAGE_KEY = 'team_wagner_water_intake';
-const DEFAULT_LITERS = 0; // Novos clientes começam com 0L
+const DEFAULT_LITERS = 0; // Novos clientes e virada do dia começam com 0L
 
-function subscribeWater(callback: () => void) {
+export function subscribeWater(callback: () => void) {
   if (typeof window === 'undefined') return () => {};
   window.addEventListener('team_wagner_water_updated', callback);
   window.addEventListener('storage', callback);
@@ -15,19 +16,18 @@ function subscribeWater(callback: () => void) {
   };
 }
 
-function getWaterSnapshot(): string {
-  if (typeof window === 'undefined') return DEFAULT_LITERS.toString();
+export function getTodayWaterLiters(): number {
+  if (typeof window === 'undefined') return DEFAULT_LITERS;
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved !== null) return saved;
+    const today = getTodayDateString();
+    const logs = getAllWaterLogs();
+    const todayTotalMl = logs
+      .filter((l) => l.date === today)
+      .reduce((acc, curr) => acc + curr.amountMl, 0);
+    return Math.round((todayTotalMl / 1000) * 10) / 10;
   } catch {
-    // ignore
+    return DEFAULT_LITERS;
   }
-  return DEFAULT_LITERS.toString();
-}
-
-function getServerWaterSnapshot(): string {
-  return DEFAULT_LITERS.toString();
 }
 
 export function setStoredWater(liters: number) {
@@ -41,8 +41,21 @@ export function setStoredWater(liters: number) {
   window.dispatchEvent(new CustomEvent('team_wagner_water_updated'));
 }
 
+/**
+ * Hook seguro para SSR e Hydration no Next.js.
+ * Renderiza DEFAULT_LITERS na hidratação inicial para evitar erros de hydration mismatch
+ * e carrega o consumo real de hoje logo em seguida no useEffect.
+ */
 export function useWaterLiters(): number {
-  const rawStr = useSyncExternalStore(subscribeWater, getWaterSnapshot, getServerWaterSnapshot);
-  const parsed = parseFloat(rawStr);
-  return isNaN(parsed) ? DEFAULT_LITERS : parsed;
+  const [liters, setLiters] = useState<number>(DEFAULT_LITERS);
+
+  useEffect(() => {
+    const update = () => {
+      setLiters(getTodayWaterLiters());
+    };
+    update();
+    return subscribeWater(update);
+  }, []);
+
+  return liters;
 }

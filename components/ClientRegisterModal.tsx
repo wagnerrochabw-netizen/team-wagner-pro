@@ -27,6 +27,7 @@ export const ClientRegisterModal: React.FC<ClientRegisterModalProps> = ({
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(initialStats.avatarUrl || null);
   const [weeklyGoal, setWeeklyGoal] = useState<number>(initialStats.weeklyGoalTarget || 4);
+  const [dailyMealsGoal, setDailyMealsGoal] = useState<number>(initialStats.dailyMealsTarget || 4);
   const [goalType, setGoalType] = useState('Hipertrofia & Força');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -66,6 +67,7 @@ export const ClientRegisterModal: React.FC<ClientRegisterModalProps> = ({
       password: password || undefined,
       avatarUrl: avatarUrl || undefined,
       weeklyGoalTarget: weeklyGoal,
+      dailyMealsTarget: dailyMealsGoal,
     });
     onClose();
   };
@@ -272,10 +274,13 @@ export const ClientRegisterModal: React.FC<ClientRegisterModalProps> = ({
 
           {/* Weekly Target Days */}
           <div className="space-y-1.5">
-            <label className="text-xs font-space font-bold text-[#BAC9CC] flex items-center gap-1.5">
-              <Dumbbell className="w-3.5 h-3.5 text-[#00E5FF]" />
-              <span>Meta Semanal de Treinos</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-space font-bold text-[#BAC9CC] flex items-center gap-1.5">
+                <Dumbbell className="w-3.5 h-3.5 text-[#00E5FF]" />
+                <span>Treinos Programados por Semana</span>
+              </label>
+              <span className="text-[10px] text-[#00E5FF] font-mono font-bold">{weeklyGoal}x / sem</span>
+            </div>
             <div className="grid grid-cols-4 gap-2">
               {[3, 4, 5, 6].map((days) => (
                 <button
@@ -289,6 +294,36 @@ export const ClientRegisterModal: React.FC<ClientRegisterModalProps> = ({
                   }`}
                 >
                   {days}x por sem
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Daily Meals Target */}
+          <div className="space-y-1.5 p-3 rounded-xl bg-[#0B0E14] border border-[#222938]">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-space font-bold text-[#E5C378] flex items-center gap-1.5">
+                <span className="text-sm">🍽️</span>
+                <span>Refeições Programadas por Dia</span>
+              </label>
+              <span className="text-[10px] text-[#E5C378] font-mono font-bold">{dailyMealsGoal} refeições/dia</span>
+            </div>
+            <p className="text-[10px] text-[#849396] font-sans">
+              Determina quantos espaços de registro de refeições aparecerão diariamente para o aluno.
+            </p>
+            <div className="grid grid-cols-4 gap-2 pt-1">
+              {[3, 4, 5, 6].map((mealsCount) => (
+                <button
+                  key={mealsCount}
+                  type="button"
+                  onClick={() => setDailyMealsGoal(mealsCount)}
+                  className={`py-2 rounded-xl border text-xs font-mono font-bold transition-all ${
+                    dailyMealsGoal === mealsCount
+                      ? 'border-[#C5A059] bg-[#C5A059] text-[#0B0E14] shadow-[0_0_12px_rgba(197,160,89,0.3)]'
+                      : 'border-[#222938] bg-[#171B26] text-[#BAC9CC] hover:text-white'
+                  }`}
+                >
+                  {mealsCount} refeições
                 </button>
               ))}
             </div>

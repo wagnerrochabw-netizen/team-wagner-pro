@@ -22,6 +22,10 @@ export interface WorkoutLog {
   photoUrl?: string; // Direct HTML image URL or Data URL
   photoSource?: 'direct_url' | 'upload' | 'preset';
   timestamp: number;
+  time?: string; // HH:mm do treino
+  status?: 'concluido' | 'agendado';
+  points?: number; // 100 pts (avulso) ou 150 pts (na data programada)
+  isOnScheduledDay?: boolean;
 }
 
 export interface DayProgress {
@@ -44,12 +48,52 @@ export interface UserStats {
   recordStreakDays: number;
   weeklyGoalTarget: number;
   weeklyGoalCompleted: number;
+  dailyMealsTarget?: number; // Quantidade de refeições programadas por dia (ex: 4)
   monthlyWorkouts: number;
   monthlyPreviousWorkouts: number;
   monthlyActiveDays: number;
   monthlyTotalHoursMinutes: string; // e.g. "11h 40m"
   averageMinutesPerSession: number;
   consistencyPercentage: number;
+}
+
+export type MealStatus = 'pendente' | 'registrada' | 'nao_realizada';
+
+export interface MealItem {
+  id: string;
+  userId: string;
+  date: string; // YYYY-MM-DD
+  plannedMealsCount: number; // Quantidade planejada naquele dia
+  mealNumber: number; // 1, 2, 3...
+  title: string; // "Refeição 1", "Refeição 2", etc.
+  photoUrl?: string; // base64 or URL
+  notes?: string; // Observação livre
+  time?: string; // HH:mm do registro
+  status: MealStatus; // pendente, registrada, nao_realizada
+  isExtra?: boolean; // Se foi refeição extra adicionada manualmente
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface DailyMealDaySummary {
+  date: string; // YYYY-MM-DD
+  plannedCount: number;
+  registeredCount: number;
+  extraCount: number;
+  completionPercentage: number;
+  points: number; // 0, 25, 50, 75, 100
+  streakDays: number;
+  consistencyBonus: number;
+  meals: MealItem[];
+}
+
+export interface ScoreBreakdown {
+  workoutsScore: number;
+  mealsScore: number;
+  waterScore: number;
+  sleepScore: number;
+  consistencyBonus: number;
+  totalScore: number;
 }
 
 export interface ChallengeItem {
@@ -88,4 +132,46 @@ export interface UserNote {
   content: string;
   createdAt: number;
 }
+
+export interface WaterLogEntry {
+  id: string;
+  date: string; // YYYY-MM-DD
+  time: string; // HH:mm
+  amountMl: number; // e.g. 250, 500, 1000
+  createdAt: number;
+}
+
+export interface DailyWaterSummary {
+  date: string; // YYYY-MM-DD
+  totalMl: number;
+  goalMl: number;
+  completionPercentage: number;
+  points: number; // 0, 25, 50, 75, 100
+  logs: WaterLogEntry[];
+}
+
+export type SleepQuality = 'otima' | 'boa' | 'regular' | 'ruim';
+
+export interface SleepLogEntry {
+  id: string;
+  date: string; // YYYY-MM-DD
+  hours: number;
+  bedTime?: string; // HH:mm
+  wakeTime?: string; // HH:mm
+  quality: SleepQuality;
+  notes?: string;
+  createdAt: number;
+  updatedAt?: number;
+}
+
+export interface DailySleepSummary {
+  date: string; // YYYY-MM-DD
+  hours: number;
+  goalHours: number;
+  completionPercentage: number;
+  points: number; // 0, 25, 50, 75, 100
+  quality: SleepQuality;
+  entry?: SleepLogEntry;
+}
+
 

@@ -11,10 +11,12 @@ import {
   CheckCircle2,
   Bed,
   Sun,
-  RotateCcw
+  RotateCcw,
+  Calendar
 } from 'lucide-react';
 import { getSleepTier, SLEEP_TIERS, SleepTierInfo } from '@/lib/sleep-helpers';
 import { useSleepData, setStoredSleep } from '@/lib/sleep-store';
+import { SleepModal } from './SleepModal';
 
 interface SleepTrackerCardProps {
   className?: string;
@@ -26,6 +28,8 @@ export const SleepTrackerCard: React.FC<SleepTrackerCardProps> = ({
   const sleepData = useSleepData();
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [showTimeModal, setShowTimeModal] = useState(false);
+  const [showSleepModal, setShowSleepModal] = useState(false);
+  const [sleepModalTab, setSleepModalTab] = useState<'register' | 'history'>('register');
 
   // Time picker state for sleeping/waking
   const [bedTime, setBedTime] = useState(sleepData.bedTime || '23:30');
@@ -206,9 +210,36 @@ export const SleepTrackerCard: React.FC<SleepTrackerCardProps> = ({
         </div>
 
         {/* Motivational description based on tier */}
-        <p className="text-xs text-[#BAC9CC] leading-relaxed mb-4 bg-[#0B0E14]/70 p-2.5 rounded-xl border border-[#222938]">
+        <p className="text-xs text-[#BAC9CC] leading-relaxed mb-3 bg-[#0B0E14]/70 p-2.5 rounded-xl border border-[#222938]">
           {currentTier.description}
         </p>
+
+        {/* Main Action Buttons (Item 2 da especificação) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 relative z-10 mb-3">
+          <button
+            type="button"
+            onClick={() => {
+              setSleepModalTab('register');
+              setShowSleepModal(true);
+            }}
+            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-500 to-[#00E5FF] hover:opacity-95 active:scale-[0.98] text-[#0B0E14] font-space font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(99,102,241,0.35)] transition-all cursor-pointer"
+          >
+            <Moon className="w-4 h-4 fill-current stroke-[2.5]" />
+            <span>REGISTRAR SONO</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSleepModalTab('history');
+              setShowSleepModal(true);
+            }}
+            className="w-full py-3 px-4 rounded-xl bg-[#0B0E14] hover:bg-[#171B26] border border-[#222938] hover:border-indigo-500/40 text-[#BAC9CC] hover:text-white font-space font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Calendar className="w-4 h-4 text-indigo-400" />
+            <span>Histórico de Sono</span>
+          </button>
+        </div>
 
         {/* Quick Action Controls */}
         <div className="grid grid-cols-4 gap-2 relative z-10 mb-2">
@@ -404,6 +435,13 @@ export const SleepTrackerCard: React.FC<SleepTrackerCardProps> = ({
           </div>
         </div>
       )}
+
+      {/* Full Sleep Modal with Option 1, Option 2 and History */}
+      <SleepModal
+        isOpen={showSleepModal}
+        onClose={() => setShowSleepModal(false)}
+        initialTab={sleepModalTab}
+      />
     </>
   );
 };

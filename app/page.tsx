@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from 'react';
 import { HomeView } from '@/components/HomeView';
 import { ProgressView } from '@/components/ProgressView';
 import { RankingView } from '@/components/RankingView';
@@ -9,12 +9,16 @@ import { OnboardingView } from '@/components/OnboardingView';
 import { RegisterWorkoutModal } from '@/components/RegisterWorkoutModal';
 import { WorkoutDetailsModal } from '@/components/WorkoutDetailsModal';
 import { NotificationsDrawer } from '@/components/NotificationsDrawer';
+import { WaterModal } from '@/components/WaterModal';
+import { SleepModal } from '@/components/SleepModal';
 import { DirectImageGuideModal } from '@/components/DirectImageGuideModal';
 import { UploadLogoModal } from '@/components/UploadLogoModal';
 import { LogoutConfirmationModal } from '@/components/LogoutConfirmationModal';
+import { MealsManagerModal } from '@/components/MealsManagerModal';
 import { DeviceFrame } from '@/components/DeviceFrame';
 import { BottomNav, TabType } from '@/components/BottomNav';
 import { WRLogo } from '@/components/WRLogo';
+import { generateRealNotifications } from '@/lib/notifications-service';
 import {
   INITIAL_STATS,
   INITIAL_WORKOUTS,
@@ -31,6 +35,7 @@ import {
   loadWorkoutsFromSupabase,
   getUserFromSupabase,
 } from '@/lib/supabase-service';
+import { saveWorkoutToDb, saveUserProfile, deleteWorkoutFromDb } from '@/lib/db-service';
 import {
   Layers,
   Smartphone,
@@ -54,25 +59,40 @@ export default function App() {
 
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isWaterModalOpen, setIsWaterModalOpen] = useState(false);
+  const [isSleepModalOpen, setIsSleepModalOpen] = useState(false);
+  const [notifTrigger, setNotifTrigger] = useState(0);
   const [isDirectImageGuideOpen, setIsDirectImageGuideOpen] = useState(false);
   const [isUploadLogoOpen, setIsUploadLogoOpen] = useState(false);
   const [isGlobalLogoutModalOpen, setIsGlobalLogoutModalOpen] = useState(false);
+  const [isMealsModalOpen, setIsMealsModalOpen] = useState(false);
+  const [mealsModalTab, setMealsModalTab] = useState<'today' | 'history' | 'rules'>('today');
   const [isDownloading, setIsDownloading] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [logoVersion, setLogoVersion] = useState(1);
   const [selectedWorkout, setSelectedWorkout] = useState<WorkoutLog | null>(null);
+  
+  // Safe client hydration detection to prevent server/client markup mismatch
+  const isMounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('dev') === 'true' || params.get('admin') === 'true') {
-        setShowDevToolbar(true);
+    const timer = setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('dev') === 'true' || params.get('admin') === 'true') {
+          setShowDevToolbar(true);
+        }
+        if (params.get('panorama') === 'true') {
+          setShowDevToolbar(true);
+          setViewMode('panorama');
+        }
       }
-      if (params.get('panorama') === 'true') {
-        setShowDevToolbar(true);
-        setViewMode('panorama');
-      }
-    }
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleConfirmLogout = () => {
@@ -171,6 +191,37 @@ export default function App() {
     return () => cancelAnimationFrame(frame);
   }, []);
 
+  const refreshUnreadNotifs = useCallback(() => {
+    setNotifTrigger((k) => k + 1);
+  }, []);
+
+  useEffect(() => {
+    const handleUpdate = () => setNotifTrigger((k) => k + 1);
+    window.addEventListener('team_wagner_notifications_updated', handleUpdate);
+    window.addEventListener('team_wagner_water_updated', handleUpdate);
+    window.addEventListener('team_wagner_sleep_updated', handleUpdate);
+    window.addEventListener('team_wagner_meals_updated', handleUpdate);
+    window.addEventListener('team_wagner_workouts_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('team_wagner_notifications_updated', handleUpdate);
+      window.removeEventListener('team_wagner_water_updated', handleUpdate);
+      window.removeEventListener('team_wagner_sleep_updated', handleUpdate);
+      window.removeEventListener('team_wagner_meals_updated', handleUpdate);
+      window.removeEventListener('team_wagner_workouts_updated', handleUpdate);
+    };
+  }, []);
+
+  const unreadNotifCount = useMemo(() => {
+    if (!isMounted) return 0;
+    void notifTrigger;
+    try {
+      const notifs = generateRealNotifications(stats, workouts);
+      return notifs.filter((n) => !n.isRead).length;
+    } catch {
+      return 0;
+    }
+  }, [isMounted, notifTrigger, stats, workouts]);
+
   // Save to localStorage when state changes
   const saveWorkoutsState = (updatedWorkouts: WorkoutLog[], updatedStats: UserStats, updatedDays: number[]) => {
     try {
@@ -185,11 +236,16 @@ export default function App() {
   const handleSaveWorkout = (newWorkoutData: Omit<WorkoutLog, 'id' | 'timestamp'>) => {
     const today = new Date();
     const todayDateNum = today.getDate();
+    const timeNow = `${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
 
     const createdWorkout: WorkoutLog = {
       ...newWorkoutData,
       id: `w-${Date.now()}`,
       timestamp: Date.now(),
+      time: newWorkoutData.time || timeNow,
+      status: 'concluido',
+      isOnScheduledDay: true,
+      points: 150, // Concluído na data programada: +150 pontos
     };
 
     const updatedWorkouts = [createdWorkout, ...workouts];
@@ -207,18 +263,29 @@ export default function App() {
     setStats(updatedStats);
 
     saveWorkoutsState(updatedWorkouts, updatedStats, updatedDays);
-    syncCurrentAthlete(updatedStats, createdWorkout.date);
+    syncCurrentAthlete(updatedStats, createdWorkout.date, updatedWorkouts);
 
-    // Persist automatically to Supabase with unique athlete account ID
+    // Dispara evento global para o ranking atualizar em tempo real
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('team_wagner_workouts_updated'));
+    }
+
+    // Persist automatically to Firestore and Supabase
     const userId = updatedStats.email ? updatedStats.email.replace(/[^a-zA-Z0-9_-]/g, '_') : 'atleta_wagner_1';
+    saveWorkoutToDb(userId, createdWorkout).catch(() => {});
+    saveUserProfile(userId, updatedStats).catch(() => {});
+
     saveUserToSupabase(userId, updatedStats).then(() => {
       saveWorkoutToSupabase(userId, createdWorkout).then((success) => {
         if (success) {
-          setToastMessage('Treino e observações salvos com sucesso!');
+          setToastMessage('Treino e pontuação (+150 pts) salvos com sucesso!');
           setTimeout(() => setToastMessage(null), 3500);
         }
       });
-    }).catch(() => {});
+    }).catch(() => {
+      setToastMessage('Treino e pontuação (+150 pts) salvos com sucesso!');
+      setTimeout(() => setToastMessage(null), 3500);
+    });
 
     // Scroll slightly to Screen 2 to see the updated streak
     if (screen2Ref.current && viewMode === 'panorama') {
@@ -243,7 +310,12 @@ export default function App() {
     const updatedStats = calculateRealStats(updatedWorkouts, stats);
     setStats(updatedStats);
     saveWorkoutsState(updatedWorkouts, updatedStats, []);
-    syncCurrentAthlete(updatedStats);
+    syncCurrentAthlete(updatedStats, undefined, updatedWorkouts);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('team_wagner_workouts_updated'));
+    }
+    const userId = stats.email ? stats.email.replace(/[^a-zA-Z0-9_-]/g, '_') : 'atleta_wagner_1';
+    deleteWorkoutFromDb(userId, workoutId).catch(() => {});
     setSelectedWorkout(null);
     setToastMessage('Treino excluído com sucesso!');
     setTimeout(() => setToastMessage(null), 3000);
@@ -478,10 +550,19 @@ export default function App() {
                         weeklyDays={weeklyDays}
                         todayFullName={todayFullName}
                         workouts={workouts}
+                        unreadNotificationsCount={unreadNotifCount}
                         onOpenWorkoutDetails={(w) => setSelectedWorkout(w)}
                         onOpenRegisterModal={scrollToRegister}
                         onOpenNotifications={() => setIsNotificationsOpen(true)}
                         onOpenDirectImageGuide={() => setIsDirectImageGuideOpen(true)}
+                        onOpenMealsManager={() => {
+                          setMealsModalTab('today');
+                          setIsMealsModalOpen(true);
+                        }}
+                        onOpenMealsHistory={() => {
+                          setMealsModalTab('history');
+                          setIsMealsModalOpen(true);
+                        }}
                         onNavigateToProgress={() => {
                           if (screen3Ref.current) {
                             screen3Ref.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
@@ -654,10 +735,19 @@ export default function App() {
                           weeklyDays={weeklyDays}
                           todayFullName={todayFullName}
                           workouts={workouts}
+                          unreadNotificationsCount={unreadNotifCount}
                           onOpenWorkoutDetails={(w) => setSelectedWorkout(w)}
                           onOpenRegisterModal={() => setIsRegisterModalOpen(true)}
                           onOpenNotifications={() => setIsNotificationsOpen(true)}
                           onOpenDirectImageGuide={() => setIsDirectImageGuideOpen(true)}
+                          onOpenMealsManager={() => {
+                            setMealsModalTab('today');
+                            setIsMealsModalOpen(true);
+                          }}
+                          onOpenMealsHistory={() => {
+                            setMealsModalTab('history');
+                            setIsMealsModalOpen(true);
+                          }}
                           onNavigateToProgress={() => {
                             setSingleTab('progress');
                             setSingleMode('main');
@@ -734,10 +824,19 @@ export default function App() {
                           weeklyDays={weeklyDays}
                           todayFullName={todayFullName}
                           workouts={workouts}
+                          unreadNotificationsCount={unreadNotifCount}
                           onOpenWorkoutDetails={(w) => setSelectedWorkout(w)}
                           onOpenRegisterModal={() => setIsRegisterModalOpen(true)}
                           onOpenNotifications={() => setIsNotificationsOpen(true)}
                           onOpenDirectImageGuide={() => {}}
+                          onOpenMealsManager={() => {
+                            setMealsModalTab('today');
+                            setIsMealsModalOpen(true);
+                          }}
+                          onOpenMealsHistory={() => {
+                            setMealsModalTab('history');
+                            setIsMealsModalOpen(true);
+                          }}
                           onNavigateToProgress={() => {
                             setSingleTab('progress');
                             setSingleMode('main');
@@ -819,6 +918,40 @@ export default function App() {
       <NotificationsDrawer
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
+        stats={stats}
+        workouts={workouts}
+        onOpenRegisterModal={() => setIsRegisterModalOpen(true)}
+        onOpenWaterModal={() => setIsWaterModalOpen(true)}
+        onOpenSleepModal={() => setIsSleepModalOpen(true)}
+        onOpenMealsModal={() => {
+          setMealsModalTab('today');
+          setIsMealsModalOpen(true);
+        }}
+        onNavigateToTab={(tab) => {
+          const targetTab = tab === 'history' ? 'progress' : (tab as TabType);
+          setSingleTab(targetTab);
+          setSingleMode('main');
+          if (viewMode === 'panorama') {
+            if (tab === 'ranking' && screen4Ref.current) {
+              screen4Ref.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            } else if (tab === 'progress' && screen3Ref.current) {
+              screen3Ref.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            } else if (screen2Ref.current) {
+              screen2Ref.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+          }
+        }}
+        onNotificationsChanged={refreshUnreadNotifs}
+      />
+
+      <WaterModal
+        isOpen={isWaterModalOpen}
+        onClose={() => setIsWaterModalOpen(false)}
+      />
+
+      <SleepModal
+        isOpen={isSleepModalOpen}
+        onClose={() => setIsSleepModalOpen(false)}
       />
 
       <DirectImageGuideModal
@@ -840,6 +973,14 @@ export default function App() {
           setLogoVersion((v) => v + 1);
           setIsUploadLogoOpen(false);
         }}
+      />
+
+      {/* Meals Manager Modal (Item 2, 6, 7 da especificação) */}
+      <MealsManagerModal
+        isOpen={isMealsModalOpen}
+        onClose={() => setIsMealsModalOpen(false)}
+        dailyMealsTarget={stats.dailyMealsTarget || 4}
+        initialTab={mealsModalTab}
       />
 
       {/* Logout Confirmation Modal */}

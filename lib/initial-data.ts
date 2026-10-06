@@ -6,6 +6,7 @@ export const INITIAL_STATS: UserStats = {
   recordStreakDays: 0,
   weeklyGoalTarget: 4,
   weeklyGoalCompleted: 0,
+  dailyMealsTarget: 4,
   monthlyWorkouts: 0,
   monthlyPreviousWorkouts: 0,
   monthlyActiveDays: 0,
@@ -13,6 +14,39 @@ export const INITIAL_STATS: UserStats = {
   averageMinutesPerSession: 0,
   consistencyPercentage: 0,
 };
+
+export const MEAL_PHOTO_PRESETS = [
+  {
+    id: 'meal_chicken_rice',
+    title: 'Frango com Arroz & Salada',
+    url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80',
+    description: 'Refeição anabólica limpa com proteína magra e vegetais'
+  },
+  {
+    id: 'meal_eggs_toast',
+    title: 'Ovos Mexidos & Pão Integral',
+    url: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=800&q=80',
+    description: 'Café da manhã hiperproteico e rico em micronutrientes'
+  },
+  {
+    id: 'meal_steak_potatoes',
+    title: 'Carne Magra com Batata Doce',
+    url: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
+    description: 'Almoço ou jantar denso para recuperação muscular'
+  },
+  {
+    id: 'meal_whey_shake',
+    title: 'Shake de Proteína & Frutas',
+    url: 'https://images.unsplash.com/photo-1553530666-ba11a7da3888?auto=format&fit=crop&w=800&q=80',
+    description: 'Pós-treino rápido com alta absorção'
+  },
+  {
+    id: 'meal_salmon_greens',
+    title: 'Salmão Grelhado com Legumes',
+    url: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=800&q=80',
+    description: 'Rico em Ômega-3 e antioxidantes'
+  }
+];
 
 export const DIRECT_IMAGE_PRESETS = [
   {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   User,
   Settings,
@@ -17,7 +17,8 @@ import {
   Plus,
   Camera,
   CheckSquare,
-  Download
+  Download,
+  Utensils
 } from 'lucide-react';
 import { UserStats, WorkoutLog } from '@/lib/types';
 import { WRLogo } from './WRLogo';
@@ -25,6 +26,8 @@ import { AvatarUploadModal } from './AvatarUploadModal';
 import { AthleteChecklistsAndNotes } from './AthleteChecklistsAndNotes';
 import { LogoutConfirmationModal } from './LogoutConfirmationModal';
 import { ClientRegisterModal } from './ClientRegisterModal';
+import { getMealGlobalTotals } from '@/lib/meal-service';
+import { getRankedAthletes } from '@/lib/athletes-ranking';
 
 interface ProfileViewProps {
   stats: UserStats;
@@ -53,6 +56,35 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+
+  // Meal totals & ranking metrics (Section 10)
+  const [mealTotals, setMealTotals] = useState(() =>
+    getMealGlobalTotals(stats.email || 'current_user', stats.dailyMealsTarget || 4)
+  );
+
+  const loadProfileMetrics = useCallback(() => {
+    setMealTotals(getMealGlobalTotals(stats.email || 'current_user', stats.dailyMealsTarget || 4));
+  }, [stats.email, stats.dailyMealsTarget]);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      loadProfileMetrics();
+    };
+
+    window.addEventListener('team_wagner_meals_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+
+    return () => {
+      window.removeEventListener('team_wagner_meals_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, [loadProfileMetrics]);
+
+  // Ranking data
+  const rankedList = getRankedAthletes(stats, workouts[0]?.date);
+  const currentUserRanked = rankedList.find((a) => a.isCurrentUser);
+  const userRankPosition = currentUserRanked?.rank || 1;
+  const userTotalScore = currentUserRanked?.score || 0;
 
   // Filter workouts that have photos
   const workoutsWithPhotos = workouts.filter((w) => !!w.photoUrl);
@@ -194,6 +226,74 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <span className="text-xs font-space">Ajustar Metas e Foco</span>
           <ChevronRight className="w-4 h-4 text-[#849396] group-hover:translate-x-1 transition-transform" />
         </button>
+      </div>
+
+      {/* Resumo do Aluno (Refeições & Ranking - Item 10 da especificação) */}
+      <div className="bg-[#12161F] border border-[#C5A059]/30 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-lg relative overflow-hidden">
+        <div className="flex items-center justify-between border-b border-[#222938] pb-2.5">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-[#0B0E14] border border-[#C5A059]/40 flex items-center justify-center text-[#E5C378]">
+              <Utensils className="w-3.5 h-3.5" />
+            </div>
+            <h3 className="font-space font-bold text-sm text-white">
+              Resumo Nutricional & Desempenho
+            </h3>
+          </div>
+          <span className="px-2.5 py-0.5 rounded-full bg-[#C5A059]/15 border border-[#C5A059]/30 text-[#E5C378] text-[10px] font-mono font-bold">
+            Posição: {userRankPosition}º lugar
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+          <div className="p-2.5 rounded-xl bg-[#0B0E14] border border-[#222938] space-y-0.5">
+            <span className="text-[10px] text-[#849396] font-space block">Refeições Hoje</span>
+            <div className="font-mono text-base font-extrabold text-[#E5C378]">
+              {mealTotals.todayRegistered}/{mealTotals.todayPlanned}
+            </div>
+            <span className="text-[9px] text-[#849396] font-mono">{mealTotals.todayPercentage}% concluído</span>
+          </div>
+
+          <div className="p-2.5 rounded-xl bg-[#0B0E14] border border-[#222938] space-y-0.5">
+            <span className="text-[10px] text-[#849396] font-space block">Taxa Semanal</span>
+            <div className="font-mono text-base font-extrabold text-emerald-400">
+              {mealTotals.weeklyCompletionRate}%
+            </div>
+            <span className="text-[9px] text-[#849396] font-sans">últimos 7 dias</span>
+          </div>
+
+          <div className="p-2.5 rounded-xl bg-[#0B0E14] border border-[#222938] space-y-0.5">
+            <span className="text-[10px] text-[#849396] font-space block">Sequência Atual</span>
+            <div className="font-mono text-base font-extrabold text-[#00E5FF] flex items-center gap-1">
+              <span>🔥</span>
+              <span>{mealTotals.currentStreak} dias</span>
+            </div>
+            <span className="text-[9px] text-[#849396] font-sans">consistência 100%</span>
+          </div>
+
+          <div className="p-2.5 rounded-xl bg-[#0B0E14] border border-[#222938] space-y-0.5">
+            <span className="text-[10px] text-[#849396] font-space block">Total de Fotos</span>
+            <div className="font-mono text-base font-extrabold text-white">
+              {mealTotals.totalPhotos}
+            </div>
+            <span className="text-[9px] text-[#849396] font-sans">registros com foto</span>
+          </div>
+
+          <div className="p-2.5 rounded-xl bg-[#0B0E14] border border-[#222938] space-y-0.5">
+            <span className="text-[10px] text-[#849396] font-space block">Pontos de Refeições</span>
+            <div className="font-mono text-base font-extrabold text-[#E5C378]">
+              {mealTotals.totalMealPoints.toLocaleString('pt-BR')} pts
+            </div>
+            <span className="text-[9px] text-[#849396] font-sans">diários + bônus</span>
+          </div>
+
+          <div className="p-2.5 rounded-xl bg-[#0B0E14] border border-[#222938] space-y-0.5">
+            <span className="text-[10px] text-[#849396] font-space block">Pontuação Total</span>
+            <div className="font-mono text-base font-extrabold text-[#00E5FF]">
+              {userTotalScore.toLocaleString('pt-BR')} pts
+            </div>
+            <span className="text-[9px] text-[#849396] font-sans">todas atividades</span>
+          </div>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -439,16 +539,27 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
 
           <div className="bg-[#12161F] border border-[#222938] rounded-xl p-4 space-y-3">
-            <h4 className="font-space font-bold text-sm text-white">
-              Metas do Plano Team Wagner
+            <h4 className="font-space font-bold text-sm text-white flex items-center justify-between">
+              <span>Metas do Plano Team Wagner</span>
+              <button
+                type="button"
+                onClick={() => setIsEditProfileOpen(true)}
+                className="text-xs text-[#00E5FF] hover:underline font-space font-semibold cursor-pointer"
+              >
+                Editar Metas
+              </button>
             </h4>
             <div className="flex items-center justify-between text-xs py-2 border-b border-[#1D2026]">
-              <span className="text-[#BAC9CC]">Meta Semanal de Treinos</span>
-              <span className="font-mono font-bold text-[#00E5FF]">{stats.weeklyGoalTarget} dias / semana</span>
+              <span className="text-[#BAC9CC]">Treinos Programados por Semana</span>
+              <span className="font-mono font-bold text-[#00E5FF]">{stats.weeklyGoalTarget || 4} dias / semana</span>
             </div>
             <div className="flex items-center justify-between text-xs py-2 border-b border-[#1D2026]">
-              <span className="text-[#BAC9CC]">Meta Mensal</span>
-              <span className="font-mono font-bold text-white">16 treinos</span>
+              <span className="text-[#BAC9CC]">Refeições Programadas por Dia</span>
+              <span className="font-mono font-bold text-[#E5C378]">{stats.dailyMealsTarget || 4} refeições / dia</span>
+            </div>
+            <div className="flex items-center justify-between text-xs py-2 border-b border-[#1D2026]">
+              <span className="text-[#BAC9CC]">Meta Mensal de Treinos</span>
+              <span className="font-mono font-bold text-white">{(stats.weeklyGoalTarget || 4) * 4} treinos</span>
             </div>
             <div className="flex items-center justify-between text-xs py-2">
               <span className="text-[#BAC9CC]">Metodologia</span>

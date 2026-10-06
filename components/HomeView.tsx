@@ -1,21 +1,25 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Bell, Dumbbell, Trophy, Plus, Check, Flame, ChevronRight, Info, TrendingUp, BarChart2, FileText, User } from 'lucide-react';
+import { Bell, Dumbbell, Trophy, Plus, Check, Flame, ChevronRight, Info, TrendingUp, BarChart2, FileText, User, Download } from 'lucide-react';
 import { UserStats, DayProgress, WorkoutLog } from '@/lib/types';
 import { WRLogo } from './WRLogo';
 import { WaterTrackerCard } from './WaterTrackerCard';
 import { SleepTrackerCard } from './SleepTrackerCard';
+import { MealsTodayCard } from './MealsTodayCard';
 
 interface HomeViewProps {
   stats: UserStats;
   weeklyDays: (DayProgress & { isToday?: boolean; dateIso?: string })[];
   todayFullName?: string;
   workouts?: WorkoutLog[];
+  unreadNotificationsCount?: number;
   onOpenWorkoutDetails?: (workout: WorkoutLog) => void;
   onOpenRegisterModal: () => void;
   onOpenNotifications: () => void;
   onOpenDirectImageGuide: () => void;
+  onOpenMealsManager?: () => void;
+  onOpenMealsHistory?: () => void;
   onNavigateToProgress?: () => void;
   onNavigateToProfile?: () => void;
 }
@@ -25,10 +29,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
   weeklyDays,
   todayFullName,
   workouts,
+  unreadNotificationsCount,
   onOpenWorkoutDetails,
   onOpenRegisterModal,
   onOpenNotifications,
   onOpenDirectImageGuide,
+  onOpenMealsManager,
+  onOpenMealsHistory,
   onNavigateToProgress,
   onNavigateToProfile,
 }) => {
@@ -67,14 +74,31 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </button>
 
         <div className="flex items-center gap-2">
+          {/* Download ZIP button */}
+          <a
+            href="/team-wagner-app.zip"
+            download="team-wagner-app.zip"
+            className="w-10 h-10 rounded-full bg-[#12161F] border border-[#00E5FF]/40 text-[#00E5FF] hover:bg-[#00E5FF]/10 flex items-center justify-center transition-colors cursor-pointer"
+            title="Baixar Código Atualizado (.ZIP)"
+          >
+            <Download className="w-5 h-5" />
+          </a>
+
           {/* Bell Notifications button */}
           <button
             onClick={onOpenNotifications}
-            className="relative w-10 h-10 rounded-full bg-[#12161F] border border-[#222938] text-[#BAC9CC] hover:text-white flex items-center justify-center transition-colors"
+            className="relative w-10 h-10 rounded-full bg-[#12161F] border border-[#222938] text-[#BAC9CC] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
             title="Notificações"
           >
             <Bell className="w-5 h-5" />
-            <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-[#00E5FF] ring-2 ring-[#0B0E14]" />
+            {unreadNotificationsCount !== undefined && unreadNotificationsCount > 0 && (
+              <span
+                suppressHydrationWarning
+                className="absolute -top-1 -right-1 min-w-4.5 h-4.5 px-1 rounded-full bg-[#00E5FF] text-[#0B0E14] font-mono font-bold text-[10px] flex items-center justify-center shadow-[0_0_8px_rgba(0,229,255,0.6)]"
+              >
+                {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -225,20 +249,22 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
       </div>
 
+      {/* Card: REFEIÇÕES DE HOJE (Item 7 da especificação) */}
+      <MealsTodayCard
+        dailyMealsTarget={stats.dailyMealsTarget || 4}
+        onOpenMealsManager={() => {
+          if (onOpenMealsManager) onOpenMealsManager();
+        }}
+        onOpenHistory={() => {
+          if (onOpenMealsHistory) onOpenMealsHistory();
+        }}
+      />
+
       {/* Meta Diária de Água & Hidratação */}
       <WaterTrackerCard />
 
       {/* Meta de Sono & Descanso */}
       <SleepTrackerCard />
-
-      {/* Big Kinetic CTA: + REGISTRAR TREINO matching Image 5 */}
-      <button
-        onClick={onOpenRegisterModal}
-        className="w-full h-14 rounded-xl bg-[#00E5FF] hover:bg-[#00daf3] active:scale-[0.99] text-[#0B0E14] font-space font-bold text-sm tracking-wider uppercase flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(0,229,255,0.35)] transition-all cursor-pointer"
-      >
-        <Plus className="w-5 h-5 stroke-[3]" />
-        <span>REGISTRAR TREINO</span>
-      </button>
 
       {/* Toast de aviso se tentar marcar fora do dia atual */}
       {dayWarningToast && (
@@ -254,7 +280,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
       )}
 
-      {/* Card: VISÃO SEMANAL */}
+      {/* Card: VISÃO SEMANAL (Item 6 da ordem solicitada) */}
       <div className="bg-[#12161F] border border-[#222938] rounded-2xl p-5 space-y-3">
         <div className="flex items-center justify-between text-xs">
           <div>
@@ -262,7 +288,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
               VISÃO SEMANAL
             </span>
           </div>
-          <span className="font-mono text-[#00E5FF] text-xs font-semibold">
+          <span suppressHydrationWarning className="font-mono text-[#00E5FF] text-xs font-semibold">
             Hoje: {todayFullName || 'Segunda-feira'}
           </span>
         </div>
@@ -331,6 +357,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Big Kinetic CTA: + REGISTRAR TREINO (Item 7: IMEDIATAMENTE ABAIXO DA VISÃO SEMANAL) */}
+      <button
+        onClick={onOpenRegisterModal}
+        className="w-full h-14 rounded-xl bg-[#00E5FF] hover:bg-[#00daf3] active:scale-[0.99] text-[#0B0E14] font-space font-bold text-sm tracking-wider uppercase flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(0,229,255,0.35)] transition-all cursor-pointer"
+      >
+        <Plus className="w-5 h-5 stroke-[3]" />
+        <span>REGISTRAR TREINO</span>
+      </button>
 
       {/* Banner / Card: Relatórios & Gráficos de Evolução */}
       <div

@@ -1,5 +1,7 @@
 import { WorkoutLog, UserStats } from './types';
 import { SleepData } from './sleep-store';
+import { getWaterSummaryForDate } from './water-service';
+import { getSleepSummaryForDate } from './sleep-service';
 
 export interface DayEvolutionPoint {
   date: string;
@@ -168,7 +170,7 @@ export function getWeeklyReport(
 
     const dayNum = d.getDate();
     const isToday = d.toDateString() === now.toDateString();
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
     // Verifica se há treino registrado pelo usuário nesta data
     const matchedWorkout = workouts.find((w) => {
@@ -179,9 +181,20 @@ export function getWeeklyReport(
 
     const hasWorkout = Boolean(matchedWorkout);
     const workoutMinutes = matchedWorkout ? matchedWorkout.durationMinutes : 0;
-    const waterLiters = isToday ? todayWaterLiters : 0;
-    const sleepHours = isToday ? todaySleepData.hours : 0;
-    const sleepQuality = isToday ? todaySleepData.quality : 'boa';
+    
+    // Busca dados reais de água e sono registrados nesta data
+    const dayWaterSummary = getWaterSummaryForDate(dateStr);
+    const waterLiters = isToday
+      ? (todayWaterLiters || dayWaterSummary.totalMl / 1000)
+      : dayWaterSummary.totalMl / 1000;
+
+    const daySleepSummary = getSleepSummaryForDate(dateStr);
+    const sleepHours = isToday
+      ? (todaySleepData.hours || daySleepSummary.hours)
+      : daySleepSummary.hours;
+    const sleepQuality = isToday
+      ? todaySleepData.quality
+      : (daySleepSummary.quality === 'otima' || daySleepSummary.quality === 'boa' ? 'boa' : 'regular');
 
     const score = calculateIntegratedDailyScore(
       hasWorkout,
@@ -346,15 +359,27 @@ export function getMonthlyReport(
 
     const hasWorkout = Boolean(matchedWorkout);
     const workoutMinutes = matchedWorkout ? matchedWorkout.durationMinutes : 0;
-    const waterLiters = isToday ? todayWaterLiters : 0;
-    const sleepHours = isToday ? todaySleepData.hours : 0;
+    
+    // Busca dados reais de água e sono registrados no histórico
+    const dayWaterSummary = getWaterSummaryForDate(dateStr);
+    const waterLiters = isToday
+      ? (todayWaterLiters || dayWaterSummary.totalMl / 1000)
+      : dayWaterSummary.totalMl / 1000;
+
+    const daySleepSummary = getSleepSummaryForDate(dateStr);
+    const sleepHours = isToday
+      ? (todaySleepData.hours || daySleepSummary.hours)
+      : daySleepSummary.hours;
+    const sleepQuality = isToday
+      ? todaySleepData.quality
+      : (daySleepSummary.quality === 'otima' || daySleepSummary.quality === 'boa' ? 'boa' : 'regular');
 
     const score = calculateIntegratedDailyScore(
       hasWorkout,
       workoutMinutes,
       waterLiters,
       sleepHours,
-      'boa'
+      sleepQuality
     );
 
     const d = new Date(currentYear, currentMonth, day);

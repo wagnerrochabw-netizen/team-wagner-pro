@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: default-deny all operations
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // User Profile Document
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId);
+
+      // Workouts Subcollection
+      match /workouts/{workoutId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Water Hydration Logs
+      match /water_logs/{logId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Sleep Recovery Logs
+      match /sleep_logs/{logId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Checklists & Habits
+      match /checklists/{checklistId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Scheduled Calendar Events
+      match /events/{eventId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Athlete Notes & Reflections
+      match /notes/{noteId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Public Community Challenges (read-only for authenticated athletes)
+    match /challenges/{challengeId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+  }
+}

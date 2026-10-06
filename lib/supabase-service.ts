@@ -4,6 +4,30 @@ import { getSupabaseClient, isSupabaseConfigured } from './supabase';
 import { WorkoutLog, UserStats, ChecklistItem, CalendarEvent, UserNote } from './types';
 
 // ==========================================
+// ACTIVE USER HELPER
+// ==========================================
+export function getActiveUserId(): string {
+  if (typeof window === 'undefined') return 'atleta_wagner_1';
+  try {
+    const raw = localStorage.getItem('team_wagner_active_user');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.email) return parsed.email.trim().toLowerCase().replace(/[^a-zA-Z0-9_-]/g, '_');
+      if (parsed.id) return parsed.id;
+    }
+    const statsRaw = localStorage.getItem('team_wagner_stats');
+    if (statsRaw) {
+      const stats = JSON.parse(statsRaw);
+      if (stats.email) return stats.email.trim().toLowerCase().replace(/[^a-zA-Z0-9_-]/g, '_');
+      if (stats.name && stats.name !== 'Atleta') return stats.name.toLowerCase().replace(/[^a-zA-Z0-9_-]/g, '_');
+    }
+  } catch {
+    // ignore
+  }
+  return 'atleta_wagner_1';
+}
+
+// ==========================================
 // USER PROFILES
 // ==========================================
 export async function saveUserToSupabase(userId: string, stats: UserStats): Promise<boolean> {
@@ -90,7 +114,7 @@ export async function saveWorkoutToSupabase(userId: string, workout: WorkoutLog)
       updated_at: new Date().toISOString(),
     }, { onConflict: 'id', ignoreDuplicates: true });
 
-    const { error } = await supabase.from('workouts').upsert({
+    const payload: Record<string, unknown> = {
       id: workout.id,
       user_id: userId,
       date: workout.date,
@@ -102,7 +126,12 @@ export async function saveWorkoutToSupabase(userId: string, workout: WorkoutLog)
       photo_url: workout.photoUrl || null,
       photo_source: workout.photoSource || 'direct_url',
       timestamp: workout.timestamp,
-    });
+    };
+    if (workout.time) payload.time = workout.time;
+    if (workout.status) payload.status = workout.status;
+    if (workout.points !== undefined) payload.points = workout.points;
+
+    const { error } = await supabase.from('workouts').upsert(payload, { onConflict: 'id' });
 
     if (error) {
       console.warn('Supabase saveWorkout error:', error.message);
@@ -111,6 +140,146 @@ export async function saveWorkoutToSupabase(userId: string, workout: WorkoutLog)
     return true;
   } catch (err) {
     console.error('Supabase saveWorkout exception:', err);
+    return false;
+  }
+}
+
+// ==========================================
+// WATER CONSUMPTION
+// ==========================================
+export async function saveWaterLogToSupabase(
+  userId: string,
+  date: string,
+  liters: number,
+  details?: { amountMl?: number; time?: string; points?: number }
+): Promise<boolean> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return false;
+
+  try {
+    await supabase.from('users').upsert({
+      id: userId,
+      name: 'Atleta',
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id', ignoreDuplicates: true });
+
+    const logId = `water_${userId}_${date}`;
+    const payload: Record<string, unknown> = {
+      id: logId,
+      user_id: userId,
+      date,
+      liters,
+      created_at: new Date().toISOString(),
+    };
+    if (details?.amountMl !== undefined) payload.amount_ml = details.amountMl;
+    if (details?.time) payload.time = details.time;
+    if (details?.points !== undefined) payload.points = details.points;
+
+    const { error } = await supabase.from('water_logs').upsert(payload, { onConflict: 'id' });
+    if (error) {
+      console.warn('Supabase saveWaterLog error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Supabase saveWaterLog exception:', err);
+    return false;
+  }
+}
+
+// ==========================================
+// SLEEP RECORDS
+// ==========================================
+export async function saveSleepLogToSupabase(
+  userId: string,
+  date: string,
+  hours: number,
+  details?: { quality?: string; bedTime?: string; wakeTime?: string; points?: number }
+): Promise<boolean> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return false;
+
+  try {
+    await supabase.from('users').upsert({
+      id: userId,
+      name: 'Atleta',
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id', ignoreDuplicates: true });
+
+    const logId = `sleep_${userId}_${date}`;
+    const payload: Record<string, unknown> = {
+      id: logId,
+      user_id: userId,
+      date,
+      hours,
+      quality: details?.quality || 'boa',
+      created_at: new Date().toISOString(),
+    };
+    if (details?.bedTime) payload.bed_time = details.bedTime;
+    if (details?.wakeTime) payload.wake_time = details.wakeTime;
+    if (details?.points !== undefined) payload.points = details.points;
+
+    const { error } = await supabase.from('sleep_logs').upsert(payload, { onConflict: 'id' });
+    if (error) {
+      console.warn('Supabase saveSleepLog error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Supabase saveSleepLog exception:', err);
+    return false;
+  }
+}
+
+// ==========================================
+// MEALS
+// ==========================================
+export async function saveMealToSupabase(
+  userId: string,
+  meal: {
+    id: string;
+    date: string;
+    mealNumber?: number;
+    title: string;
+    description?: string;
+    time?: string;
+    photoUrl?: string;
+    status?: string;
+    isExtra?: boolean;
+    points?: number;
+  }
+): Promise<boolean> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return false;
+
+  try {
+    await supabase.from('users').upsert({
+      id: userId,
+      name: 'Atleta',
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id', ignoreDuplicates: true });
+
+    const { error } = await supabase.from('meals').upsert({
+      id: meal.id,
+      user_id: userId,
+      date: meal.date,
+      meal_number: meal.mealNumber || null,
+      title: meal.title,
+      description: meal.description || null,
+      time: meal.time || null,
+      photo_url: meal.photoUrl || null,
+      status: meal.status || 'pendente',
+      is_extra: meal.isExtra || false,
+      created_at: new Date().toISOString(),
+    }, { onConflict: 'id' });
+
+    if (error) {
+      console.warn('Supabase saveMeal error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Supabase saveMeal exception:', err);
     return false;
   }
 }

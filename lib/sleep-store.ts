@@ -1,6 +1,7 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
+import { useState, useEffect } from 'react';
+import { getAllSleepLogs, getTodayDateString } from './sleep-service';
 
 export interface SleepData {
   hours: number;
@@ -12,13 +13,13 @@ export interface SleepData {
 const STORAGE_KEY = 'team_wagner_sleep_record';
 
 const DEFAULT_SLEEP: SleepData = {
-  hours: 0, // Novo cliente começa com 0h até registrar o sono
+  hours: 0, // Novo cliente e nova virada de dia começam com 0h até registrar o sono
   quality: 'boa',
   bedTime: '',
   wakeTime: '',
 };
 
-function subscribeSleep(callback: () => void) {
+export function subscribeSleep(callback: () => void) {
   if (typeof window === 'undefined') return () => {};
   window.addEventListener('team_wagner_sleep_updated', callback);
   window.addEventListener('storage', callback);
@@ -28,30 +29,34 @@ function subscribeSleep(callback: () => void) {
   };
 }
 
-function getSleepSnapshot(): string {
-  if (typeof window === 'undefined') return JSON.stringify(DEFAULT_SLEEP);
+export function getTodaySleepData(): SleepData {
+  if (typeof window === 'undefined') return DEFAULT_SLEEP;
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved !== null) return saved;
+    const today = getTodayDateString();
+    const logs = getAllSleepLogs();
+    const todayLog = logs.find((l) => l.date === today);
+    if (todayLog) {
+      return {
+        hours: todayLog.hours,
+        quality: todayLog.quality === 'otima' || todayLog.quality === 'boa' ? 'boa' : 'regular',
+        bedTime: todayLog.bedTime || '',
+        wakeTime: todayLog.wakeTime || '',
+      };
+    }
   } catch {
     // ignore
   }
-  return JSON.stringify(DEFAULT_SLEEP);
-}
-
-function getServerSleepSnapshot(): string {
-  return JSON.stringify(DEFAULT_SLEEP);
+  return DEFAULT_SLEEP;
 }
 
 export function setStoredSleep(data: Partial<SleepData>) {
   if (typeof window === 'undefined') return;
   try {
-    const current = getSleepSnapshot();
-    const parsed: SleepData = JSON.parse(current);
+    const current = getTodaySleepData();
     const updated: SleepData = {
-      ...parsed,
+      ...current,
       ...data,
-      hours: data.hours !== undefined ? Math.max(0, Math.min(16, Math.round(data.hours * 10) / 10)) : parsed.hours,
+      hours: data.hours !== undefined ? Math.max(0, Math.min(16, Math.round(data.hours * 10) / 10)) : current.hours,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('team_wagner_sleep_updated'));
@@ -60,11 +65,21 @@ export function setStoredSleep(data: Partial<SleepData>) {
   }
 }
 
+/**
+ * Hook seguro para SSR e Hydration no Next.js.
+ * Renderiza DEFAULT_SLEEP no SSR para garantir casamento exato de hidratação
+ * e carrega o sono real do dia após a montagem.
+ */
 export function useSleepData(): SleepData {
-  const rawStr = useSyncExternalStore(subscribeSleep, getSleepSnapshot, getServerSleepSnapshot);
-  try {
-    return JSON.parse(rawStr);
-  } catch {
-    return DEFAULT_SLEEP;
-  }
+  const [sleep, setSleep] = useState<SleepData>(DEFAULT_SLEEP);
+
+  useEffect(() => {
+    const update = () => {
+      setSleep(getTodaySleepData());
+    };
+    update();
+    return subscribeSleep(update);
+  }, []);
+
+  return sleep;
 }

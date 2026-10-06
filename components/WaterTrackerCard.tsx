@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Droplets, Minus, Info, RotateCcw, Bell, Clock } from 'lucide-react';
+import { Droplets, Minus, Info, RotateCcw, Bell, Clock, Calendar, Plus } from 'lucide-react';
 import { getWaterTier, WATER_TIERS, WaterTierInfo } from '@/lib/water-helpers';
 import { useWaterLiters, setStoredWater } from '@/lib/water-store';
+import { addWaterLog, getWaterSummaryForDate, getTodayDateString } from '@/lib/water-service';
 import {
   getWaterReminderConfig,
   WaterReminderConfig,
@@ -12,6 +13,7 @@ import {
 } from '@/lib/water-reminder';
 import { WaterReminderModal } from './WaterReminderModal';
 import { WaterReminderToast } from './WaterReminderToast';
+import { WaterModal } from './WaterModal';
 
 interface WaterTrackerCardProps {
   className?: string;
@@ -24,6 +26,8 @@ export const WaterTrackerCard: React.FC<WaterTrackerCardProps> = ({
   const [showInfoModal, setShowInfoModal] = useState<boolean>(false);
   const [showReminderModal, setShowReminderModal] = useState<boolean>(false);
   const [showReminderToast, setShowReminderToast] = useState<boolean>(false);
+  const [showWaterModal, setShowWaterModal] = useState<boolean>(false);
+  const [waterModalTab, setWaterModalTab] = useState<'register' | 'history'>('register');
   const [reminderConfig, setReminderConfig] = useState<WaterReminderConfig>(() => {
     return {
       enabled: true,
@@ -90,7 +94,11 @@ export const WaterTrackerCard: React.FC<WaterTrackerCardProps> = ({
   }, [reminderConfig]);
 
   const handleAdd = (deltaLiters: number) => {
-    setStoredWater(liters + deltaLiters);
+    if (deltaLiters > 0) {
+      addWaterLog(Math.round(deltaLiters * 1000));
+    } else {
+      setStoredWater(Math.max(0, liters + deltaLiters));
+    }
     if (reminderConfig.soundEnabled) {
       playWaterChime();
     }
@@ -268,9 +276,36 @@ export const WaterTrackerCard: React.FC<WaterTrackerCardProps> = ({
         </div>
 
         {/* Motivational description based on tier */}
-        <p className="text-xs text-[#BAC9CC] leading-relaxed mb-4 bg-[#0B0E14]/70 p-2.5 rounded-xl border border-[#222938]">
+        <p className="text-xs text-[#BAC9CC] leading-relaxed mb-3 bg-[#0B0E14]/70 p-2.5 rounded-xl border border-[#222938]">
           {currentTier.description}
         </p>
+
+        {/* Main Action Buttons (Item 1 da especificação) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 relative z-10 mb-3">
+          <button
+            type="button"
+            onClick={() => {
+              setWaterModalTab('register');
+              setShowWaterModal(true);
+            }}
+            className="w-full py-3 px-4 rounded-xl bg-[#00E5FF] hover:bg-[#22e9ff] active:scale-[0.98] text-[#0B0E14] font-space font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,229,255,0.35)] transition-all cursor-pointer"
+          >
+            <Droplets className="w-4 h-4 fill-current stroke-[2.5]" />
+            <span>REGISTRAR ÁGUA</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setWaterModalTab('history');
+              setShowWaterModal(true);
+            }}
+            className="w-full py-3 px-4 rounded-xl bg-[#0B0E14] hover:bg-[#171B26] border border-[#222938] hover:border-[#00E5FF]/40 text-[#BAC9CC] hover:text-white font-space font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Calendar className="w-4 h-4 text-[#00E5FF]" />
+            <span>Histórico de Água</span>
+          </button>
+        </div>
 
         {/* Quick Action Buttons */}
         <div className="grid grid-cols-4 gap-2 relative z-10">
