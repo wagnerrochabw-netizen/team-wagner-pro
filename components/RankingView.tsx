@@ -24,8 +24,8 @@ import {
   Info
 } from 'lucide-react';
 import { UserStats, WorkoutLog } from '@/lib/types';
-import { useIsMounted } from '@/lib/utils';
 import { WRLogo } from './WRLogo';
+import { CommunityFeed } from './CommunityFeed';
 import {
   RankedAthlete,
   getRankedAthletes,
@@ -47,7 +47,7 @@ export const RankingView: React.FC<RankingViewProps> = ({
   onOpenRegisterModal,
   onOpenRegisterClientModal,
 }) => {
-  const isMounted = useIsMounted();
+  const [activeSection, setActiveSection] = useState<'ranking' | 'feed'>('ranking');
   const [refreshKey, setRefreshKey] = useState(0);
   const [timeframe, setTimeframe] = useState<'geral' | 'mensal' | 'semanal'>('geral');
   const [expandedAthleteId, setExpandedAthleteId] = useState<string | null>(null);
@@ -64,11 +64,8 @@ export const RankingView: React.FC<RankingViewProps> = ({
 
   const rankedList = useMemo(() => {
     void refreshKey;
-    if (!isMounted) {
-      return getInitialRankedAthletes(stats, timeframe);
-    }
     return getRankedAthletes(stats, lastWorkoutDate, timeframe, workouts);
-  }, [isMounted, stats, lastWorkoutDate, timeframe, workouts, refreshKey]);
+  }, [stats, lastWorkoutDate, timeframe, workouts, refreshKey]);
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -150,23 +147,59 @@ export const RankingView: React.FC<RankingViewProps> = ({
 
         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#00E5FF]/10 border border-[#00E5FF]/30 text-[#00E5FF] font-mono text-[11px] font-bold">
           <span className="w-1.5 h-1.5 rounded-full bg-[#00E5FF] animate-pulse" />
-          <span>RANKING OFICIAL TEAM WAGNER</span>
+          <span>TEAM WAGNER SOCIAL & RANKING</span>
         </div>
       </div>
 
-      {/* Title & Description */}
-      <div>
-        <span className="text-[10px] font-mono tracking-wider font-semibold text-[#00E5FF] uppercase block">
-          COMPETIÇÃO & CONSISTÊNCIA
-        </span>
-        <h1 className="font-space text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-          <span>Ranking de Alunos</span>
-          <Trophy className="w-6 h-6 text-[#FFD700]" />
-        </h1>
-        <p className="text-xs text-[#849396] mt-0.5 font-space">
-          Classificação geral baseada em treinos realizados, fotos de refeições registradas, consistência e recuperação.
-        </p>
+      {/* Top Navigation Switcher: Ranking vs Comunidade */}
+      <div className="grid grid-cols-2 p-1 bg-[#12161F] border border-[#222938] rounded-xl shadow-inner">
+        <button
+          type="button"
+          onClick={() => setActiveSection('ranking')}
+          className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-space font-bold transition-all cursor-pointer ${
+            activeSection === 'ranking'
+              ? 'bg-[#00E5FF] text-[#0B0E14] shadow-[0_0_15px_rgba(0,229,255,0.45)]'
+              : 'text-[#BAC9CC] hover:text-white'
+          }`}
+        >
+          <Trophy className="w-4 h-4" />
+          <span>🏆 Ranking Alunos</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSection('feed')}
+          className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-space font-bold transition-all cursor-pointer relative ${
+            activeSection === 'feed'
+              ? 'bg-[#00E5FF] text-[#0B0E14] shadow-[0_0_15px_rgba(0,229,255,0.45)]'
+              : 'text-[#BAC9CC] hover:text-white'
+          }`}
+        >
+          <Sparkles className="w-4 h-4" />
+          <span>📸 Feed Comunidade</span>
+          <span className="px-1.5 py-0.2 rounded-full bg-[#FF9100] text-black font-mono text-[9px] font-black uppercase">
+            Social
+          </span>
+        </button>
       </div>
+
+      {activeSection === 'feed' ? (
+        <CommunityFeed stats={stats} />
+      ) : (
+        <>
+          {/* Title & Description */}
+          <div>
+            <span className="text-[10px] font-mono tracking-wider font-semibold text-[#00E5FF] uppercase block">
+              COMPETIÇÃO & CONSISTÊNCIA
+            </span>
+            <h1 className="font-space text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+              <span>Ranking de Alunos</span>
+              <Trophy className="w-6 h-6 text-[#FFD700]" />
+            </h1>
+            <p className="text-xs text-[#849396] mt-0.5 font-space">
+              Classificação geral baseada em treinos realizados, fotos de refeições registradas, consistência e recuperação.
+            </p>
+          </div>
 
       {/* User Position Spotlight Card */}
       <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#12161F] via-[#151D2A] to-[#00E5FF]/10 border border-[#00E5FF]/50 shadow-xl space-y-3.5 relative overflow-hidden">
@@ -439,6 +472,8 @@ export const RankingView: React.FC<RankingViewProps> = ({
           );
         })}
       </div>
+        </>
+      )}
 
       {/* Add Athlete Modal */}
       {isAddAthleteModalOpen && (

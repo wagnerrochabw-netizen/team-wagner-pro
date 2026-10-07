@@ -32,7 +32,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         <button
           type="button"
           onClick={() => onChangeTab('home')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 transition-all ${
+          className={`flex flex-col items-center justify-center flex-1 py-1 transition-all cursor-pointer ${
             currentTab === 'home'
               ? 'text-[#00E5FF]'
               : 'text-[#BAC9CC] hover:text-white'
@@ -48,7 +48,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         <button
           type="button"
           onClick={() => onChangeTab('progress')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 transition-all ${
+          className={`flex flex-col items-center justify-center flex-1 py-1 transition-all cursor-pointer ${
             currentTab === 'progress'
               ? 'text-[#00E5FF]'
               : 'text-[#BAC9CC] hover:text-white'
@@ -79,7 +79,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         <button
           type="button"
           onClick={() => onChangeTab('ranking')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 transition-all ${
+          className={`flex flex-col items-center justify-center flex-1 py-1 transition-all cursor-pointer ${
             currentTab === 'ranking'
               ? 'text-[#00E5FF]'
               : 'text-[#BAC9CC] hover:text-white'
@@ -95,7 +95,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         <button
           type="button"
           onClick={() => onChangeTab('profile')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 transition-all ${
+          className={`flex flex-col items-center justify-center flex-1 py-1 transition-all cursor-pointer ${
             currentTab === 'profile'
               ? 'text-[#00E5FF]'
               : 'text-[#BAC9CC] hover:text-white'

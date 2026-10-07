@@ -214,7 +214,6 @@ export default function App() {
   }, []);
 
   const unreadNotifCount = useMemo(() => {
-    if (!isMounted) return 0;
     void notifTrigger;
     try {
       const notifs = generateRealNotifications(stats, workouts);
@@ -222,7 +221,7 @@ export default function App() {
     } catch {
       return 0;
     }
-  }, [isMounted, notifTrigger, stats, workouts]);
+  }, [notifTrigger, stats, workouts]);
 
   // Save to localStorage when state changes
   const saveWorkoutsState = (updatedWorkouts: WorkoutLog[], updatedStats: UserStats, updatedDays: number[]) => {
@@ -570,6 +569,11 @@ export default function App() {
                             screen3Ref.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
                           }
                         }}
+                        onNavigateToRanking={() => {
+                          setViewMode('single');
+                          setSingleMode('main');
+                          setSingleTab('ranking');
+                        }}
                         onNavigateToProfile={handleNavigateToProfile}
                       />
                     </div>
@@ -841,6 +845,10 @@ export default function App() {
                           }}
                           onNavigateToProgress={() => {
                             setSingleTab('progress');
+                            setSingleMode('main');
+                          }}
+                          onNavigateToRanking={() => {
+                            setSingleTab('ranking');
                             setSingleMode('main');
                           }}
                           onNavigateToProfile={() => {

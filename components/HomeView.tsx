@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Bell, Dumbbell, Trophy, Plus, Check, Flame, ChevronRight, Info, TrendingUp, BarChart2, FileText, User } from 'lucide-react';
+import { Bell, Dumbbell, Trophy, Plus, Check, Flame, ChevronRight, Info, TrendingUp, BarChart2, FileText, User, Sparkles, Camera, Utensils } from 'lucide-react';
 import { UserStats, DayProgress, WorkoutLog } from '@/lib/types';
 import { WRLogo } from './WRLogo';
 import { WaterTrackerCard } from './WaterTrackerCard';
@@ -21,6 +21,7 @@ interface HomeViewProps {
   onOpenMealsManager?: () => void;
   onOpenMealsHistory?: () => void;
   onNavigateToProgress?: () => void;
+  onNavigateToRanking?: () => void;
   onNavigateToProfile?: () => void;
 }
 
@@ -37,6 +38,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onOpenMealsManager,
   onOpenMealsHistory,
   onNavigateToProgress,
+  onNavigateToRanking,
   onNavigateToProfile,
 }) => {
   const [dayWarningToast, setDayWarningToast] = useState<string | null>(null);
@@ -392,6 +394,44 @@ export const HomeView: React.FC<HomeViewProps> = ({
             Tríade: 88/100
           </span>
           <span className="text-[#849396]">Toque para ver gráficos</span>
+        </div>
+      </div>
+
+      {/* Banner / Card: Comunidade & Feed Social Team Wagner */}
+      <div
+        onClick={onNavigateToRanking}
+        className="p-4 rounded-2xl bg-gradient-to-r from-[#12161F] via-[#1A1A24] to-[#FF9100]/10 border border-[#FF9100]/40 hover:border-[#FF9100] transition-all cursor-pointer group space-y-2.5 shadow-xl hover:shadow-[0_0_20px_rgba(255,145,0,0.2)]"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#FF9100]/15 border border-[#FF9100]/40 text-[#FF9100] flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(255,145,0,0.3)]">
+              <Camera className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-space font-bold text-sm text-white group-hover:text-[#FF9100] transition-colors block leading-tight">
+                  Feed Social & Comunidade
+                </span>
+                <span className="text-[9px] font-mono text-black px-1.5 py-0.5 rounded bg-[#FF9100] font-black uppercase">
+                  Social
+                </span>
+              </div>
+              <span className="text-[11px] text-[#849396] font-mono block mt-0.5">
+                Fotos de refeições, treinos, likes e IA Coach 🤖
+              </span>
+            </div>
+          </div>
+          <div className="w-8 h-8 rounded-full bg-[#171B26] border border-[#222938] group-hover:border-[#FF9100]/50 flex items-center justify-center text-[#FF9100] shrink-0">
+            <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between pt-2 border-t border-[#222938]/60 text-[11px] font-mono text-[#BAC9CC]">
+          <span className="text-[#FF9100] font-semibold flex items-center gap-1">
+            <Sparkles className="w-3.5 h-3.5" />
+            Análise com IA + Comentários Automáticos
+          </span>
+          <span className="text-[#00E5FF] group-hover:underline">Acessar Feed →</span>
         </div>
       </div>
 

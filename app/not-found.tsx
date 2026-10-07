@@ -7,12 +7,12 @@ export default function NotFound() {
         404
       </div>
       <h2 className="text-2xl font-bold tracking-tight text-white mb-2">Página não encontrada</h2>
-      <p className="text-gray-400 max-w-md text-sm mb-6">
-        A página ou recurso que você está procurando não existe ou foi movido.
+      <p className="text-gray-400 max-w-md text-sm mb-6 font-sans">
+        A página solicitada não existe ou retornou ao início.
       </p>
       <Link
         href="/"
-        className="px-6 py-2.5 rounded-xl bg-[#00E5FF] text-black font-semibold text-sm hover:bg-[#33EBFF] transition-colors shadow-lg shadow-[#00E5FF]/20"
+        className="px-6 py-2.5 rounded-xl bg-[#00E5FF] text-black font-semibold text-sm hover:bg-[#33EBFF] transition-colors"
       >
         Voltar para o Início
       </Link>
