@@ -250,7 +250,7 @@ export const RegisterWorkoutModal: React.FC<RegisterWorkoutModalProps> = ({
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#00E5FF] animate-pulse" />
               <span className="font-space font-bold text-white">Data do Registro:</span>
-              <span className="font-mono text-[#00E5FF] font-semibold">Hoje ({new Date().toLocaleDateString('pt-BR')})</span>
+              <span suppressHydrationWarning className="font-mono text-[#00E5FF] font-semibold">Hoje ({new Date().toLocaleDateString('pt-BR')})</span>
             </div>
             <span className="text-[10px] font-mono text-[#00E5FF] px-2 py-0.5 rounded bg-[#0B0E14] border border-[#00E5FF]/40 font-bold">
               Apenas Dia Atual

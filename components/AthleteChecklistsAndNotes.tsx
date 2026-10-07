@@ -386,7 +386,7 @@ export const AthleteChecklistsAndNotes: React.FC = () => {
                   </button>
                 </div>
                 <p className="text-xs text-[#BAC9CC] leading-relaxed whitespace-pre-line">{note.content}</p>
-                <span className="text-[10px] text-[#849396] font-mono block pt-1">
+                <span suppressHydrationWarning className="text-[10px] text-[#849396] font-mono block pt-1">
                   {new Date(note.createdAt).toLocaleDateString('pt-BR')}
                 </span>
               </div>

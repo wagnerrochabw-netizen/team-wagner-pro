@@ -1,7 +1,6 @@
 'use client';
 
 import { SleepLogEntry, DailySleepSummary, SleepQuality } from './types';
-import { setStoredSleep } from './sleep-store';
 import { saveSleepLogToDb } from './db-service';
 import { saveSleepLogToSupabase, getActiveUserId } from './supabase-service';
 
@@ -62,13 +61,6 @@ export function saveAllSleepLogs(logs: SleepLogEntry[]): void {
     const today = getTodayDateString();
     const todayLog = logs.find((l) => l.date === today);
     if (todayLog) {
-      setStoredSleep({
-        hours: todayLog.hours,
-        quality: todayLog.quality === 'otima' || todayLog.quality === 'boa' ? 'boa' : 'regular',
-        bedTime: todayLog.bedTime,
-        wakeTime: todayLog.wakeTime,
-      });
-
       // Persistência no Firestore e Supabase
       try {
         const activeUser = localStorage.getItem('team_wagner_active_user');

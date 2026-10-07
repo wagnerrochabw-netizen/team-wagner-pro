@@ -1,5 +1,5 @@
 import { WorkoutLog, UserStats } from './types';
-import { SleepData } from './sleep-store';
+import type { SleepData } from './sleep-store';
 import { getWaterSummaryForDate } from './water-service';
 import { getSleepSummaryForDate } from './sleep-service';
 

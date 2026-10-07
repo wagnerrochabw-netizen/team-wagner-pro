@@ -392,7 +392,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen dot-canvas text-[#E1E2EB] flex flex-col select-none">
+    <div className="min-h-screen dot-canvas text-[#E1E2EB] flex flex-col select-none" suppressHydrationWarning>
       
       {/* Top Presentation Bar - ONLY visible if showDevToolbar is active */}
       {showDevToolbar && (

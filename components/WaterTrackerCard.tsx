@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Droplets, Minus, Info, RotateCcw, Bell, Clock, Calendar, Plus } from 'lucide-react';
 import { getWaterTier, WATER_TIERS, WaterTierInfo } from '@/lib/water-helpers';
 import { useWaterLiters, setStoredWater } from '@/lib/water-store';
-import { addWaterLog, getWaterSummaryForDate, getTodayDateString } from '@/lib/water-service';
+import { addWaterLog, removeWaterAmount, resetWaterForDate, getWaterSummaryForDate, getTodayDateString } from '@/lib/water-service';
 import {
   getWaterReminderConfig,
   WaterReminderConfig,
@@ -96,8 +96,8 @@ export const WaterTrackerCard: React.FC<WaterTrackerCardProps> = ({
   const handleAdd = (deltaLiters: number) => {
     if (deltaLiters > 0) {
       addWaterLog(Math.round(deltaLiters * 1000));
-    } else {
-      setStoredWater(Math.max(0, liters + deltaLiters));
+    } else if (deltaLiters < 0) {
+      removeWaterAmount(Math.round(Math.abs(deltaLiters) * 1000));
     }
     if (reminderConfig.soundEnabled) {
       playWaterChime();
@@ -109,7 +109,7 @@ export const WaterTrackerCard: React.FC<WaterTrackerCardProps> = ({
   };
 
   const handleReset = () => {
-    setStoredWater(0);
+    resetWaterForDate();
   };
 
   const currentTier: WaterTierInfo = getWaterTier(liters);
@@ -464,6 +464,13 @@ export const WaterTrackerCard: React.FC<WaterTrackerCardProps> = ({
           saveWaterReminderConfig(updated);
           setReminderConfig(updated);
         }}
+      />
+
+      {/* Full Water Modal with Register and History Tabs */}
+      <WaterModal
+        isOpen={showWaterModal}
+        onClose={() => setShowWaterModal(false)}
+        initialTab={waterModalTab}
       />
     </>
   );

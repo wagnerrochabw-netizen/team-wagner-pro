@@ -1,12 +1,12 @@
 'use client';
 
 import { WaterLogEntry, DailyWaterSummary } from './types';
-import { setStoredWater } from './water-store';
 import { saveWaterLogToDb } from './db-service';
 import { saveWaterLogToSupabase, getActiveUserId } from './supabase-service';
 
 const LOGS_STORAGE_KEY = 'team_wagner_water_logs';
 const GOAL_STORAGE_KEY = 'team_wagner_water_goal';
+const INTAKE_STORAGE_KEY = 'team_wagner_water_intake';
 export const DEFAULT_WATER_GOAL_ML = 3000; // 3 Litros
 
 export function getTodayDateString(): string {
@@ -70,8 +70,12 @@ export function saveAllWaterLogs(logs: WaterLogEntry[]): void {
     const todayTotalMl = logs
       .filter((l) => l.date === today)
       .reduce((acc, curr) => acc + curr.amountMl, 0);
-    const todayLiters = todayTotalMl / 1000;
-    setStoredWater(todayLiters);
+    const todayLiters = Math.round((todayTotalMl / 100) / 10 * 10) / 10;
+    try {
+      localStorage.setItem(INTAKE_STORAGE_KEY, todayLiters.toString());
+    } catch {
+      // ignore
+    }
 
     // Persistência assíncrona no Firestore e Supabase
     try {
@@ -145,6 +149,44 @@ export function deleteWaterLog(id: string): void {
   const logs = getAllWaterLogs();
   const updated = logs.filter((l) => l.id !== id);
   saveAllWaterLogs(updated);
+}
+
+/**
+ * Remove uma quantidade de água (ml) do dia, decrementando ou removendo os registros mais recentes
+ */
+export function removeWaterAmount(amountMl: number, customDate?: string): void {
+  const date = customDate || getTodayDateString();
+  const allLogs = getAllWaterLogs();
+  let remaining = Math.max(0, Math.round(amountMl));
+
+  const updatedLogs: WaterLogEntry[] = [];
+
+  for (const log of allLogs) {
+    if (log.date === date && remaining > 0) {
+      if (log.amountMl <= remaining) {
+        remaining -= log.amountMl;
+        // Registro consumido/removido por completo
+      } else {
+        const modified = { ...log, amountMl: log.amountMl - remaining };
+        remaining = 0;
+        updatedLogs.push(modified);
+      }
+    } else {
+      updatedLogs.push(log);
+    }
+  }
+
+  saveAllWaterLogs(updatedLogs);
+}
+
+/**
+ * Zera o consumo de água de uma data específica
+ */
+export function resetWaterForDate(customDate?: string): void {
+  const date = customDate || getTodayDateString();
+  const allLogs = getAllWaterLogs();
+  const filtered = allLogs.filter((l) => l.date !== date);
+  saveAllWaterLogs(filtered);
 }
 
 /**

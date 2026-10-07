@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getAllSleepLogs, getTodayDateString } from './sleep-service';
+import { getAllSleepLogs, getTodayDateString, saveSleepRecord } from './sleep-service';
 
 export interface SleepData {
   hours: number;
@@ -53,13 +53,18 @@ export function setStoredSleep(data: Partial<SleepData>) {
   if (typeof window === 'undefined') return;
   try {
     const current = getTodaySleepData();
-    const updated: SleepData = {
-      ...current,
-      ...data,
-      hours: data.hours !== undefined ? Math.max(0, Math.min(16, Math.round(data.hours * 10) / 10)) : current.hours,
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    window.dispatchEvent(new CustomEvent('team_wagner_sleep_updated'));
+    const targetHours = data.hours !== undefined ? Math.max(0, Math.min(24, Math.round(data.hours * 10) / 10)) : current.hours;
+    const targetQuality = data.quality || current.quality;
+    const targetBedTime = data.bedTime !== undefined ? data.bedTime : current.bedTime;
+    const targetWakeTime = data.wakeTime !== undefined ? data.wakeTime : current.wakeTime;
+
+    saveSleepRecord({
+      date: getTodayDateString(),
+      hours: targetHours,
+      quality: targetQuality,
+      bedTime: targetBedTime,
+      wakeTime: targetWakeTime,
+    });
   } catch {
     // ignore
   }

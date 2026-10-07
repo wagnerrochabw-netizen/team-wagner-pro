@@ -66,8 +66,17 @@ export async function requestBrowserNotificationPermission(): Promise<boolean> {
     return true;
   }
   try {
-    const permission = await Notification.requestPermission();
-    return permission === 'granted' || permission === 'default';
+    const res = Notification.requestPermission();
+    if (res && typeof res.then === 'function') {
+      const permission = await res;
+      return permission === 'granted' || permission === 'default';
+    } else {
+      return new Promise((resolve) => {
+        Notification.requestPermission((permission) => {
+          resolve(permission === 'granted' || permission === 'default');
+        });
+      });
+    }
   } catch {
     return true;
   }
@@ -114,15 +123,25 @@ export function initMobileAudioUnlock() {
         source.connect(ctx.destination);
         source.start(0);
       }
+
+      // Pré-carrega também o áudio HTML5 para mobile
+      const uri = generateWaterDropWavDataUri();
+      const testAudio = new Audio(uri);
+      testAudio.volume = 0.01;
+      testAudio.play().then(() => {
+        testAudio.pause();
+        testAudio.currentTime = 0;
+      }).catch(() => {});
+
       isAudioUnlocked = true;
     } catch {
       // ignore
     }
   };
 
-  window.addEventListener('touchstart', unlock, { capture: true, passive: true });
-  window.addEventListener('touchend', unlock, { capture: true, passive: true });
-  window.addEventListener('click', unlock, { capture: true, passive: true });
+  window.addEventListener('touchstart', unlock, { capture: true, passive: true, once: true });
+  window.addEventListener('touchend', unlock, { capture: true, passive: true, once: true });
+  window.addEventListener('click', unlock, { capture: true, passive: true, once: true });
 }
 
 // Gera em memória um som de gota d'água cristalino em formato WAV Base64
@@ -203,6 +222,8 @@ function generateWaterDropWavDataUri(): string {
 export function playWaterChime() {
   if (typeof window === 'undefined') return;
 
+  let webAudioPlayed = false;
+
   // 1. Tenta Web Audio API com desbloqueio
   try {
     const ctx = getAudioContext();
@@ -220,7 +241,7 @@ export function playWaterChime() {
       osc1.frequency.setValueAtTime(620, t);
       osc1.frequency.exponentialRampToValueAtTime(1450, t + 0.09);
 
-      gain1.gain.setValueAtTime(0.45, t);
+      gain1.gain.setValueAtTime(0.5, t);
       gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
 
       osc1.connect(gain1);
@@ -235,26 +256,28 @@ export function playWaterChime() {
       osc2.frequency.setValueAtTime(980, t + 0.1);
       osc2.frequency.exponentialRampToValueAtTime(1950, t + 0.22);
 
-      gain2.gain.setValueAtTime(0.5, t + 0.1);
+      gain2.gain.setValueAtTime(0.55, t + 0.1);
       gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
 
       osc2.connect(gain2);
       gain2.connect(ctx.destination);
       osc2.start(t + 0.1);
       osc2.stop(t + 0.35);
-      return;
+      webAudioPlayed = true;
     }
   } catch {
-    // Se falhar ou estiver bloqueado, segue para o fallback HTML5
+    webAudioPlayed = false;
   }
 
-  // 2. Fallback universal HTML5 Audio
-  try {
-    const dataUri = generateWaterDropWavDataUri();
-    const audio = new Audio(dataUri);
-    audio.volume = 0.8;
-    audio.play().catch(() => {});
-  } catch {
-    // ignore
+  // 2. Fallback universal HTML5 Audio garantido
+  if (!webAudioPlayed) {
+    try {
+      const dataUri = generateWaterDropWavDataUri();
+      const audio = new Audio(dataUri);
+      audio.volume = 0.9;
+      audio.play().catch(() => {});
+    } catch {
+      // ignore
+    }
   }
 }
