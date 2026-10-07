@@ -19,6 +19,7 @@ import { DeviceFrame } from '@/components/DeviceFrame';
 import { BottomNav, TabType } from '@/components/BottomNav';
 import { WRLogo } from '@/components/WRLogo';
 import { generateRealNotifications } from '@/lib/notifications-service';
+import { initMobileAudioUnlock } from '@/lib/water-reminder';
 import {
   INITIAL_STATS,
   INITIAL_WORKOUTS,
@@ -80,6 +81,7 @@ export default function App() {
   );
 
   useEffect(() => {
+    initMobileAudioUnlock();
     const timer = setTimeout(() => {
       if (typeof window !== 'undefined') {
         const params = new URLSearchParams(window.location.search);

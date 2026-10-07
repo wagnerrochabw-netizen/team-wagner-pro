@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Bell, Dumbbell, Trophy, Plus, Check, Flame, ChevronRight, Info, TrendingUp, BarChart2, FileText, User, Download } from 'lucide-react';
+import { Bell, Dumbbell, Trophy, Plus, Check, Flame, ChevronRight, Info, TrendingUp, BarChart2, FileText, User } from 'lucide-react';
 import { UserStats, DayProgress, WorkoutLog } from '@/lib/types';
 import { WRLogo } from './WRLogo';
 import { WaterTrackerCard } from './WaterTrackerCard';
@@ -74,16 +74,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </button>
 
         <div className="flex items-center gap-2">
-          {/* Download ZIP button */}
-          <a
-            href="/team-wagner-app.zip"
-            download="team-wagner-app.zip"
-            className="w-10 h-10 rounded-full bg-[#12161F] border border-[#00E5FF]/40 text-[#00E5FF] hover:bg-[#00E5FF]/10 flex items-center justify-center transition-colors cursor-pointer"
-            title="Baixar Código Atualizado (.ZIP)"
-          >
-            <Download className="w-5 h-5" />
-          </a>
-
           {/* Bell Notifications button */}
           <button
             onClick={onOpenNotifications}

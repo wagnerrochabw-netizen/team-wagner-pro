@@ -78,12 +78,12 @@ export const WRLogo: React.FC<WRLogoProps> = ({
         <img
           src={effectiveSrc}
           alt="WAGNER ROCHA - @treinador.wagner"
-          className="h-8 sm:h-9 w-auto object-contain max-w-[240px]"
+          className="h-8 sm:h-9 w-auto object-contain max-w-[260px]"
           onError={(e) => {
             const img = e.target as HTMLImageElement;
             if (img.src.includes('logo-banner.png')) {
-              img.src = '/logo-banner.png.PNG';
-            } else if (img.src.includes('logo-banner.png.PNG')) {
+              img.src = '/logo-banner.PNG';
+            } else if (img.src.includes('logo-banner.PNG')) {
               img.src = '/logo-banner.svg';
             }
           }}
@@ -102,8 +102,8 @@ export const WRLogo: React.FC<WRLogoProps> = ({
         onError={(e) => {
           const img = e.target as HTMLImageElement;
           if (img.src.includes('logo.png')) {
-            img.src = '/logo.png.png';
-          } else if (img.src.includes('logo.png.png')) {
+            img.src = '/logo.PNG';
+          } else if (img.src.includes('logo.PNG')) {
             img.src = '/logo.svg';
           }
         }}

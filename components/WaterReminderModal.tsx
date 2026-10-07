@@ -65,16 +65,13 @@ export const WaterReminderModal: React.FC<WaterReminderModalProps> = ({
   };
 
   const handleToggleBrowserNotification = async () => {
-    if (!config.browserNotification) {
-      const granted = await requestBrowserNotificationPermission();
-      const updated = { ...config, browserNotification: granted };
-      setConfig(updated);
-      saveWaterReminderConfig(updated);
-    } else {
-      const updated = { ...config, browserNotification: false };
-      setConfig(updated);
-      saveWaterReminderConfig(updated);
+    const nextState = !config.browserNotification;
+    if (nextState) {
+      await requestBrowserNotificationPermission();
     }
+    const updated = { ...config, browserNotification: nextState };
+    setConfig(updated);
+    saveWaterReminderConfig(updated);
   };
 
   const handleSaveAndClose = () => {
